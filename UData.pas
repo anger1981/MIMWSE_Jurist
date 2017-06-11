@@ -1,0 +1,133 @@
+unit UData;
+
+interface
+
+uses Dialogs, DB, StdCtrls, Controls, SysUtils, Forms, IniFiles, Registry;
+
+type
+  TWindow=Record
+    Open: Boolean;
+    Pointer: Pointer;
+  end;
+  TWindowID=Record
+    Reference, AgreementEdit, AgreementReg, JournalEdit, JournalReg, Calendar: TWindow;
+  end;
+  TParametr=Record
+    DateIn, DateOut: TDate;
+    Region: Integer;
+    Result: Boolean;
+    RegionName, RegionStr: String;
+  end;
+  TSearchAdr=record
+    Str_Kind, Str_Name, House_Name, Flat_Name: String;
+    Str_UKey: Integer;
+    Selected: Boolean;
+  end;
+
+procedure NotReleased;
+procedure NoPermition;
+function ReadyToReport: Boolean;
+procedure CheckPoint(Sender: TObject);
+function PreReport: TParametr;
+function IntToBool(i:Integer):Boolean;
+
+const
+  MyKey1='Software\Gradient\Gde\Aliases\gradient_abonent';
+  MyKey2='Software\PC-Software\Jurist\Configure';
+  MyKey3='Software\PC-Software\Jurist\Configure\Reference';
+
+var
+  IniFile: TIniFile;
+  WindowID: TWindowID;
+  AsOutlook: Boolean;
+  Version_Base, ToolbarPos, BaseDir: String;
+  User_Login: String; // логин пользователя
+  User_Permiting_Count: Integer; // Счетчик прав
+  User_UKey: Integer; // ключ пользователя
+  User_Permiting: array of Boolean; // разрешения (права) пользователя
+  RepParam: TParametr;
+  Reg: TRegistry;
+  SearchAdr: TSearchAdr;
+  DatabaseName: String;
+
+implementation
+
+uses UDBForm, USearch, UPreReport;
+
+function IntToBool(i:Integer):Boolean;
+begin
+  if i=0 then Result:=False
+  else Result:=True;
+end;
+
+procedure CheckPoint(Sender: TObject);
+var
+  s: String;
+begin
+  {
+  s:=(Sender as TEdit).Text;
+  if Length(s)<>0 then s[pos(',',s)]:='.';
+  (Sender as TEdit).Text:=s;
+  }
+end;
+
+procedure NotReleased;
+begin
+  MessageDlg('ВНИМАНИЕ!'+#13+'Эта функция пока не реализована, ожидайте следующей версии.',mtInformation,[mbOk],0);
+end;
+
+function ReadyToReport;
+begin
+  Result:=True;
+  if WindowID.JournalEdit.Open or WindowID.JournalReg.Open then begin
+    MessageDlg('ВНИМАНИЕ!'+#13+'Для выполнения этой операции закройте все окна.',mtWarning,[mbOk],0);
+    Result:=False;
+  end;
+end;
+
+procedure NoPermition;
+begin
+  MessageDlg('ОШИБКА!'+#13+'Вы не имеете права на данную операцию.',mtError,[mbOk],0);
+end;
+
+function PreReport;
+begin
+  Result.DateIn:=StrToDate('01.01.1997');
+  Result.DateOut:=now;
+  Result.Region:=-1;
+  Result.Result:=False;
+  with TFrmPreReport.Create(nil) do
+   try
+     DateTimePicker1.Date:=Result.DateIn;
+     DateTimePicker2.Date:=Result.DateOut;
+     ShowModal;
+     if Tag=1 then begin
+       Result.Result:=True;
+       Result.DateIn:=DateTimePicker1.Date;
+       Result.DateOut:=DateTimePicker2.Date;
+       If RadioGroup.ItemIndex=-1
+       Then
+         Result.Region:=RadioGroup.ItemIndex
+       Else
+         Result.Region:=RadioGroup.ItemIndex+1;
+     end;
+   finally
+     Free;
+   end;
+  case Result.Region of
+    -1: begin Result.RegionStr:=''; Result.RegionName:='по всем регионам'; end;
+    1: begin Result.RegionStr:=' and department_cod=1'; Result.RegionName:='по жовтневому'; end;
+    2: begin Result.RegionStr:=' and department_cod=2'; Result.RegionName:='по приморскому'; end;
+    3: begin Result.RegionStr:=' and department_cod=3'; Result.RegionName:='по ильичевскому'; end;
+    4: begin Result.RegionStr:=' and department_cod=4'; Result.RegionName:='по орджоникидзевскому'; end;
+    5: begin Result.RegionStr:=' and department_cod=5'; Result.RegionName:='по Первомайску'; end;
+    6: begin Result.RegionStr:=' and department_cod=6'; Result.RegionName:='по Новоазовску'; end;
+    7: begin Result.RegionStr:=' and department_cod=7'; Result.RegionName:='по Володарску'; end;
+    8: begin Result.Region:=46; Result.RegionStr:=' and department_cod=46'; Result.RegionName:='по ордженикидзевскому (включая Новоазовск)'; end;
+    9: begin Result.Region:=17; Result.RegionStr:=' and department_cod=17'; Result.RegionName:='по жовтневому (включая Вододарск)'; end;
+   10: begin Result.Region:=25; Result.RegionStr:=' and department_cod=25'; Result.RegionName:='по приморскому (включая Первомайск)'; end;
+  end;
+
+end;
+
+end.

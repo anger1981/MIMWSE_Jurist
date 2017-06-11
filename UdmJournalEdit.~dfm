@@ -1,0 +1,7 @@
+object dmJournalEdit: TdmJournalEdit
+  OldCreateOrder = False
+  Left = 363
+  Top = 109
+  Height = 646
+  Width = 786
+end
